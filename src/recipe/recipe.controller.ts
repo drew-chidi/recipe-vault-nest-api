@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { RecipeService } from './recipe.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as cloudinary from 'cloudinary';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import cloudinary from 'src/config/cloudinary.config';
 
 @Controller('recipes')
 export class RecipeController {
@@ -41,8 +41,18 @@ export class RecipeController {
     let imageUrl = '';
 
     if (file) {
-      const result = await cloudinary.v2.uploader.upload(file.path);
-      imageUrl = result.secure_url;
+      const result = await new Promise((resolve) => {
+        cloudinary.uploader
+          .upload_stream({ resource_type: 'image' }, (error, result) => {
+            if (error) {
+              throw new Error('Error uploading image');
+            } else {
+              resolve(result);
+            }
+          })
+          .end(file.buffer);
+      });
+      imageUrl = (result as any).secure_url;
     }
 
     return this.recipeService.createRecipe(createRecipeDto, imageUrl);
@@ -58,11 +68,24 @@ export class RecipeController {
     let imageUrl = '';
 
     if (file) {
-      const result = await cloudinary.v2.uploader.upload(file.path);
-      imageUrl = result.secure_url;
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ resource_type: 'image' }, (error, result) => {
+            if (error) {
+              return reject(error);
+            }
+            resolve(result);
+          })
+          .end(file.buffer);
+      });
+      imageUrl = (result as any).secure_url;
     }
 
-    return this.recipeService.updateRecipe(id, updateRecipeDto, imageUrl);
+    return this.recipeService.updateRecipe(
+      id,
+      updateRecipeDto,
+      imageUrl || undefined,
+    );
   }
 
   @Delete(':id')

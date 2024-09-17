@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Recipe } from './schemas/recipe.schema';
+import cloudinary from 'src/config/cloudinary.config';
 
 @Injectable()
 export class RecipeService {
@@ -41,11 +42,26 @@ export class RecipeService {
     recipeData: Partial<Recipe>,
     imageUrl?: string,
   ) {
-    const updatedRecipe = await this.recipeModel.findByIdAndUpdate(
-      id,
-      { ...recipeData, ...(imageUrl && { image: imageUrl }) },
-      { new: true },
-    );
+    const existingRecipe = await this.recipeModel.findById(id).exec();
+    if (!existingRecipe) {
+      throw new NotFoundException('Recipe not found');
+    }
+
+    if (imageUrl) {
+      // Delete the old image if it exists
+      if (existingRecipe.image) {
+        const publicId = existingRecipe.image.split('/').pop()?.split('.')[0];
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        }
+      }
+    } else {
+      imageUrl = existingRecipe.image; // Retain the old image if no new one is provided
+    }
+
+    const updatedRecipe = await this.recipeModel
+      .findByIdAndUpdate(id, { ...recipeData, image: imageUrl }, { new: true })
+      .exec();
     if (!updatedRecipe) {
       throw new NotFoundException('Recipe not found');
     }
@@ -53,6 +69,18 @@ export class RecipeService {
   }
 
   async deleteRecipe(id: string) {
+    const recipe = await this.recipeModel.findById(id).exec();
+    if (!recipe) {
+      throw new NotFoundException('Recipe not found');
+    }
+
+    // Delete the image from Cloudinary if it exists
+    if (recipe.image) {
+      const publicId = recipe.image.split('/').pop()?.split('.')[0];
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      }
+    }
     const deletedRecipe = await this.recipeModel.findByIdAndDelete(id);
     if (!deletedRecipe) {
       throw new NotFoundException('Recipe not found');
