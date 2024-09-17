@@ -13,6 +13,7 @@ import {
 import { RecipeService } from './recipe.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as cloudinary from 'cloudinary';
+import { CreateRecipeDto } from './dto/create-recipe.dto';
 
 @Controller('recipes')
 export class RecipeController {
@@ -33,23 +34,9 @@ export class RecipeController {
 
   @Post()
   @UseInterceptors(FileInterceptor('image'))
-  async createRecipe(@Body() body, @UploadedFile() file) {
-    let imageUrl = '';
-
-    if (file) {
-      const result = await cloudinary.v2.uploader.upload(file.path);
-      imageUrl = result.secure_url;
-    }
-
-    return this.recipeService.createRecipe(body, imageUrl);
-  }
-
-  @Put(':id')
-  @UseInterceptors(FileInterceptor('image'))
-  async updateRecipe(
-    @Param('id') id: string,
-    @Body() body,
-    @UploadedFile() file,
+  async createRecipe(
+    @Body() createRecipeDto: CreateRecipeDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     let imageUrl = '';
 
@@ -58,7 +45,24 @@ export class RecipeController {
       imageUrl = result.secure_url;
     }
 
-    return this.recipeService.updateRecipe(id, body, imageUrl);
+    return this.recipeService.createRecipe(createRecipeDto, imageUrl);
+  }
+
+  @Put(':id')
+  @UseInterceptors(FileInterceptor('image'))
+  async updateRecipe(
+    @Param('id') id: string,
+    @Body() updateRecipeDto: CreateRecipeDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    let imageUrl = '';
+
+    if (file) {
+      const result = await cloudinary.v2.uploader.upload(file.path);
+      imageUrl = result.secure_url;
+    }
+
+    return this.recipeService.updateRecipe(id, updateRecipeDto, imageUrl);
   }
 
   @Delete(':id')

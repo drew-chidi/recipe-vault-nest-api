@@ -10,6 +10,7 @@ export class RecipeService {
   async getAllRecipes(page: number, limit: number) {
     const recipes = await this.recipeModel
       .find()
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
