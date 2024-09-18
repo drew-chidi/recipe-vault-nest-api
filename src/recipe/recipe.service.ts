@@ -34,7 +34,7 @@ export class RecipeService {
 
   async createRecipe(recipeData: Partial<Recipe>, imageUrl: string) {
     const newRecipe = new this.recipeModel({ ...recipeData, image: imageUrl });
-    return newRecipe.save();
+    return await newRecipe.save();
   }
 
   async updateRecipe(
