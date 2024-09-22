@@ -32,9 +32,16 @@ export class RecipeService {
     return recipe;
   }
 
-  async createRecipe(recipeData: Partial<Recipe>, imageUrl: string) {
-    const newRecipe = new this.recipeModel({ ...recipeData, image: imageUrl });
-    return await newRecipe.save();
+  async createRecipe(recipeData: Partial<Recipe>, imageUrl?: string) {
+    try {
+      const newRecipe = new this.recipeModel({
+        ...recipeData,
+        image: imageUrl,
+      });
+      return await newRecipe.save();
+    } catch (error) {
+      throw new Error(`Error creating recipe: ${error} `);
+    }
   }
 
   async updateRecipe(
